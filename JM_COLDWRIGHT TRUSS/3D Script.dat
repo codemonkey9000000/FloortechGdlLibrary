@@ -1,0 +1,549 @@
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!! This file is part of Floortech GDL Library
+!! created by John McSweeney
+!!
+!! This file contains: 
+!! :: CW260 Plan Object
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! draw truss cords
+! draw truss webs (insite cut plane and cut poly)
+! If truss penetration, webs are cutpoly'd
+! draw standard endcaps
+! draw whatever nec is needed
+
+GOSUB "TrussCords"
+GOSUB "TrussWebs"
+GOSUB "StandardEndcaps"
+GOSUB "NecEndcaps"
+IF has_truss_penetration AND NOT(bad_penetration_location) THEN	GOSUB "Penetration"
+
+END
+
+! SUB ROUTINES ===================================================================================================================================
+"TrussCords":
+	GOSUB "DrawTrussCord"
+	ADDz b_dep
+	MULz -1
+		GOSUB "DrawTrussCord"
+	DEL 2
+RETURN
+
+"TrussWebs":
+	ADDY (b_wid - web_wid)/2
+		IF has_truss_penetration AND NOT(bad_penetration_location) THEN CUTPOLY 4,
+        	    															peno_start, b_dep,
+												    	       				peno_end, b_dep,
+												            				peno_end, 0,
+												        	   				peno_start, 0
+			ADDx std_endcap_thk
+				CUTPLANE final_cut_length - std_endcap_thk*2, 0
+					i = 0
+					WHILE i<=web_count DO
+						GOSUB "DrawTrussWeb"
+						i = i+1
+						ADDx 2*(web_spacing)
+						MULx -1
+						GOSUB "DrawTrussWeb"
+						MULx -1
+						i = i+1
+					ENDWHILE
+				CUTEND
+				DEL (web_count-1)*2+1
+			DEL 1
+		IF has_truss_penetration AND NOT(bad_penetration_location) THEN CUTEND
+	DEL 1
+RETURN
+
+"StandardEndcaps":
+	!draw standard endcaps onto every truss
+	MATERIAL left_endcap_material
+	GOSUB "StandardEndcap"
+		
+	MATERIAL right_endcap_material
+	ADD A, 50/m2mm, 0
+	ROTz 180
+		GOSUB "StandardEndcap"
+	DEL 2
+RETURN
+	
+"NecEndcaps":
+	IF nec_typeL = "Adjustable" THEN
+		MATERIAL adj_endcap_material1
+	
+		ADDz 50/m2mm
+			GOSUB "AdjustableNECendcap"
+		DEL 1
+	ENDIF
+	IF nec_typeR = "Adjustable" THEN
+		MATERIAL adj_endcap_material1
+	
+		ADD A, 50/m2mm + 1/m2mm, 0
+		ROTz 180
+		ADDz 50/m2mm
+			GOSUB "AdjustableNECendcap"
+		DEL 3
+	ENDIF
+	IF NOT(nec_typeL = "Standard") AND NOT(nec_typeL = "Adjustable") THEN
+		GOSUB "HandleLeftNecBracket"
+	ENDIF
+	
+	IF NOT(nec_typeR = "Standard") AND NOT(nec_typeR = "Adjustable") THEN
+		GOSUB "HandleRightNecBracket"
+	ENDIF
+RETURN
+
+"Penetration":
+	ADD peno_start, 0, chord_hgt
+	ROTy -90
+		GOSUB "DrawVerticalChordOfPenetration"
+	DEL 2
+
+	ADD peno_end, 0, b_dep - chord_hgt
+	ROTy 90
+		GOSUB "DrawVerticalChordOfPenetration"
+	DEL 2
+
+	ADD peno_start, b_wid, chord_hgt + chord_thk
+	ROTx 180
+		GOSUB "DrawHorizontalChordOfPenetration"
+		MULz -1
+		ADDz b_dep - chord_hgt*2 - chord_thk*2
+			GOSUB "DrawHorizontalChordOfPenetration"
+	DEL 4
+
+	ADD peno_start, 0, 0
+		GOSUB "DrawAllPenetrationReinforcementBrackets"
+	DEL 1
+RETURN
+
+"DrawTrussCord": 
+	! Thanks David Marshall; borrowing this TUBE script
+	! Going to replace it soon though, not sure why TUBE script is used...saw barlky
+	MATERIAL truss_material
+
+	ADDX std_endcap_thk
+		TUBE  12, 4, 1+2+4+8+16+32,
+			0,0,0,
+			0,chord_hgt,0,
+			chord_thk*3, chord_hgt, 0,
+			chord_thk*3, chord_hgt-chord_thk, 0,
+			chord_thk, chord_hgt-chord_thk,0,
+			chord_thk, chord_thk, 0,
+		
+			b_wid-chord_thk, chord_thk, 0,
+			b_wid-chord_thk, chord_hgt-chord_thk, 0,
+			b_wid-chord_thk*3, chord_hgt-chord_thk, 0,
+			b_wid-chord_thk*3, chord_hgt, 0,
+			b_wid, chord_hgt,0,
+			b_wid, 0 , 0,
+		
+			-0.5, 0, 0, 0, 
+			0, 0, 0, 0, 
+			A - std_endcap_thk*2,  0, 0,0, 
+		 	A - std_endcap_thk*2 + 0.5,0, 0,0
+	
+		! hotspots around bottom cord
+		hotspot 0,0,0
+		hotspot 0,b_wid,0
+		hotspot A,b_wid,0
+		hotspot A,0,0
+	DEL 1
+RETURN
+
+"DrawAllPenetrationReinforcementBrackets":
+	peno_reo_plate_thk = 0.0016
+! bottom-left
+	ROTx 90
+	ROTz 90
+		GOSUB "DrawPenetrationReinforcementBracket"
+	ADDz b_wid * (-1) - peno_reo_plate_thk
+		GOSUB "DrawPenetrationReinforcementBracket"
+	DEL 3
+
+! bottom-right
+	ADDx peno_end - peno_start
+	ROTx 90
+		GOSUB "DrawPenetrationReinforcementBracket"
+	ADDz b_wid * (-1) - peno_reo_plate_thk
+		GOSUB "DrawPenetrationReinforcementBracket"
+	DEL 3
+
+! top-right
+	ADD peno_end - peno_start, b_wid, b_dep
+	ROTx 270
+		GOSUB "DrawPenetrationReinforcementBracket"
+	ADDz b_wid * (-1) - peno_reo_plate_thk
+		GOSUB "DrawPenetrationReinforcementBracket"
+	DEL 3
+
+! top-left
+	!ADDy 0.2
+	ADD 0, b_wid + peno_reo_plate_thk, b_dep
+	ROTx 270
+	ROTy 180
+	!! should probably be done with MUL isntead of weird ROTs
+		GOSUB "DrawPenetrationReinforcementBracket"
+	ADDz b_wid + peno_reo_plate_thk
+		GOSUB "DrawPenetrationReinforcementBracket"
+	DEL 4
+RETURN
+
+"DrawPenetrationReinforcementBracket":
+	MATERIAL penetration_material
+	PRISM 5, peno_reo_plate_thk, 
+		0, 0,
+		0.08, 0,
+		0.08, chord_hgt,
+		chord_hgt, 0.08,
+		0, 0.08
+RETURN
+
+"DrawVerticalChordOfPenetration":
+	MATERIAL penetration_material
+	TUBE  12, 4, 1+2+4+8+16+32,
+		0,0,0,
+		0,chord_hgt,0,
+		chord_thk*3, chord_hgt, 0,
+		chord_thk*3, chord_hgt-chord_thk, 0,
+		chord_thk, chord_hgt-chord_thk,0,
+		chord_thk, chord_thk, 0,
+	
+		b_wid-chord_thk, chord_thk, 0,
+		b_wid-chord_thk, chord_hgt-chord_thk, 0,
+		b_wid-chord_thk*3, chord_hgt-chord_thk, 0,
+		b_wid-chord_thk*3, chord_hgt, 0,
+		b_wid, chord_hgt,0,
+		b_wid, 0 , 0,
+	
+		-0.5, 0, 0, 0, 
+		0, 0, 0, 0, 
+		b_dep - chord_hgt*2,  0, 0, 0, 
+	 	b_dep - chord_hgt*2 + 0.5, 0, 0, 0
+
+RETURN
+
+"DrawHorizontalChordOfPenetration":
+	MATERIAL penetration_material
+	rbwid = b_wid + chord_thk*2
+	rbhgt = chord_hgt + chord_thk
+	ADDY chord_thk * (-1)
+	TUBE  8, 4, 1+2+4+8+16+32,
+		0, 0, 0,
+		0, rbhgt, 0,
+		chord_thk, rbhgt, 0,
+		chord_thk, chord_thk, 0,
+
+		rbwid - chord_thk, chord_thk,0,
+		rbwid - chord_thk, rbhgt, 0,
+		rbwid, rbhgt, 0,
+		rbwid, 0, 0,
+		
+		-0.5, 0, 0, 0, 
+		0, 0, 0, 0, 
+		.344,  0, 0, 0, 
+	 	.344 + 0.5, 0, 0, 0
+	DEL 1
+RETURN
+
+"DrawTrussWeb": 
+	MATERIAL truss_material
+	ADDZ chord_thk
+		TUBE 4,4, 1+2+16+32+64,
+		0,0,0,
+		web_wid,0,0,
+		web_wid,-web_thk,0,
+		0,-web_thk,0,
+	
+		(b_dep-chord_thk*2)/tan(web_ang),0,-(b_dep-chord_thk*2),0,
+		0,0,0,0,
+		(b_dep-chord_thk*2)/tan(web_ang),0,(b_dep-chord_thk*2),0,
+		-(b_dep-chord_thk*2)/tan(web_ang),0,3*(b_dep-chord_thk*2),0
+	DEL 1
+RETURN
+
+
+! Sub routines for NEC brackets ============================================================================
+
+"HandleRightNecBracket":
+	nec_type = nec_typeR
+	MATERIAL right_endcap_material
+	ADD A, 50/m2mm + nec_endcap_thk, 0
+	ROTZ 180
+		GOSUB "NECEndcapChoice"
+	DEL 2
+RETURN
+
+"HandleLeftNecBracket":
+	nec_type = nec_typeL
+	MATERIAL left_endcap_material
+	ADDY nec_endcap_thk*(-1)
+		GOSUB "NECEndcapChoice"
+	DEL 1
+RETURN
+
+"NECEndcapChoice":
+	IF nec_type = "Type A" THEN
+		ADDz nec_typeA
+			GOSUB "NECendcap"
+		DEL 1
+	ENDIF
+	IF nec_type = "Type B" THEN
+		ADDz nec_typeB
+			GOSUB "NECendcap"
+		DEL 1
+	ENDIF
+	IF nec_type = "Type C" THEN
+		ADDz nec_typeC
+			GOSUB "NECendcap1"
+		DEL 1
+	ENDIF
+	IF nec_type = "Type D" THEN
+		ADDz nec_typeD
+			GOSUB "NECendcap3"
+		DEL 1
+	ENDIF
+	IF nec_type = "Type E" THEN
+		ADDz nec_typeE
+			GOSUB "NECendcap1"
+		DEL 1
+	ENDIF
+	IF nec_type = "Type F" THEN
+		ADDz nec_typeF
+			GOSUB "NECendcap2"
+		DEL 1
+	ENDIF
+	IF nec_type = "Type G" THEN
+		ADDz nec_typeG
+			GOSUB "NECendcap2"
+		DEL 1
+	ENDIF
+	IF nec_type = "Type H" THEN
+		ADDz nec_typeH
+			GOSUB "NECendcap2"
+		DEL 1
+	ENDIF
+	IF nec_type = "Type I" THEN
+		ADDz nec_typeI
+			GOSUB "NECendcap3"
+		DEL 1
+	ENDIF
+	IF nec_type = "Type J" THEN
+		ADDz nec_typeJ
+			GOSUB "NECendcap3"
+		DEL 1
+	ENDIF
+	IF nec_type = "Type K" THEN
+		ADDz nec_typeK
+			GOSUB "NECendcap3"
+		DEL 1
+	ENDIF
+	IF nec_type = "Type L" THEN
+		ADDz nec_typeM
+			GOSUB "NECendcap4"
+		DEL 1
+	ENDIF
+	IF nec_type = "Type P" THEN
+		ADDz nec_typeP
+			GOSUB "NECendcap2"
+		DEL 1
+	ENDIF
+	IF nec_type = "Special" THEN
+		ADDz nec_special
+			GOSUB "NECendcap1"
+		DEL 1
+	ENDIF
+RETURN
+
+! Sub routines to draw various NEC Endcaps ============================================================================
+
+"StandardEndcap":
+	ecHgt = std_endcap_hgt
+	ecDep = std_endcap_dep
+	ecWid = std_endcap_wid
+	ecThk = std_endcap_thk
+	ADD ecDep + ecThk, 0, (b_dep - ecHgt)/2
+	ROTy -90
+		TUBE  8, 4, 1+2+4+8+16+32,
+			-ecThk, 0, 0,
+			-ecThk, ecDep+ecThk, 0,
+			ecWid+ecThk, ecDep+ecThk, 0,
+			ecWid+ecThk, 0, 0,
+
+			ecWid, 0, 0,
+			ecWid, ecDep, 0,
+			0, ecDep, 0,
+			0, 0, 0,	
+		
+			-0.5, 0, 0, 0, 
+			0, 0, 0, 0, 
+			ecHgt,  0, 0, 0, 
+			a+0.5,0, 0,0
+	DEL 2
+RETURN
+
+"AdjustableNECendcap":
+	GOSUB "NECendcap"
+	
+	arrow_wid = 50/m2mm
+	ADD arrow_wid/2, -0.01, 0
+	ROTz 90
+		GOSUB "ArrowSymbol"
+	DEL 2
+
+	ADD arrow_wid/2, ecWid, 0
+	ROTz 90
+		GOSUB "ArrowSymbol"
+	DEL 2
+RETURN
+
+"ArrowSymbol":
+	MATERIAL adj_endcap_material2
+	TUBE  10, 4, 1+2+4+8+16+32,
+			arrow_wid/2, 0, 0,
+			0, ecHgt/4, 0,
+			arrow_wid/4, ecHgt/4, 0,
+			arrow_wid/4, ecHgt/4*3, 0,
+			0, ecHgt/4*3, 0,
+			arrow_wid/2, ecHgt, 0,
+			arrow_wid, ecHgt/4*3, 0,
+			arrow_wid/4*3, ecHgt/4*3, 0,
+			arrow_wid/4*3, ecHgt/4, 0,
+			arrow_wid, ecHgt/4, 0,
+
+			-0.5, 0, 0, 0, 
+			0, 0, 0, 0, 
+			.01,  0, 0, 0, 
+			a+0.5,0, 0, 0
+RETURN
+
+
+"NECendcap":
+	ecHgt = nec_endcap_hgt
+	ecDep = nec_endcap_dep
+	ecWid = nec_endcap_wid
+	ecThk = nec_endcap_thk
+
+	ADDx 60/m2mm
+	ROTy -90
+		TUBE  8, 4, 1+2+4+8+16+32,
+			-ecThk, 0, 0,
+			-ecThk, ecDep+ecThk, 0,
+			ecWid+ecThk, ecDep+ecThk, 0,
+			ecWid+ecThk, 0, 0,
+
+			ecWid, 0, 0,
+			ecWid, ecDep, 0,
+			0, ecDep, 0,
+			0, 0, 0,	
+		
+			-0.5, 0, 0, 0, 
+			0, 0, 0, 0, 
+			ecHgt,  0, 0, 0, 
+			a+0.5,0, 0, 0
+	DEL 2
+RETURN
+
+"NECendcap1":
+	ecHgt = nec_endcap_hgt1
+	ecDep = nec_endcap_dep1
+	ecWid = nec_endcap_wid1
+	ecThk = nec_endcap_thk1
+
+	ADDx 60/m2mm
+	ROTy -90
+		TUBE  8, 4, 1+2+4+8+16+32,
+			-ecThk, 0, 0,
+			-ecThk, ecDep+ecThk, 0,
+			ecWid+ecThk, ecDep+ecThk, 0,
+			ecWid+ecThk, 0, 0,
+
+			ecWid, 0, 0,
+			ecWid, ecDep, 0,
+			0, ecDep, 0,
+			0, 0, 0,	
+		
+			-0.5, 0, 0, 0, 
+			0, 0, 0, 0, 
+			ecHgt,  0, 0, 0, 
+			a+0.5,0, 0, 0
+	DEL 2
+RETURN
+
+"NECendcap2":
+	ecHgt = nec_endcap_hgt2
+	ecDep = nec_endcap_dep2
+	ecWid = nec_endcap_wid2
+	ecThk = nec_endcap_thk2
+
+	ADDx 60/m2mm
+	ROTy -90
+		TUBE  8, 4, 1+2+4+8+16+32,
+			-ecThk, 0, 0,
+			-ecThk, ecDep+ecThk, 0,
+			ecWid+ecThk, ecDep+ecThk, 0,
+			ecWid+ecThk, 0, 0,
+
+			ecWid, 0, 0,
+			ecWid, ecDep, 0,
+			0, ecDep, 0,
+			0, 0, 0,	
+		
+			-0.5, 0, 0, 0, 
+			0, 0, 0, 0, 
+			ecHgt,  0, 0, 0, 
+			a+0.5,0, 0, 0
+	DEL 2
+RETURN
+
+"NECendcap3":
+	ecHgt = nec_endcap_hgt3
+	ecDep = nec_endcap_dep3
+	ecWid = nec_endcap_wid3
+	ecThk = nec_endcap_thk3
+
+	ADDx 60/m2mm
+	ROTy -90
+		TUBE  8, 4, 1+2+4+8+16+32,
+			-ecThk, 0, 0,
+			-ecThk, ecDep+ecThk, 0,
+			ecWid+ecThk, ecDep+ecThk, 0,
+			ecWid+ecThk, 0, 0,
+
+			ecWid, 0, 0,
+			ecWid, ecDep, 0,
+			0, ecDep, 0,
+			0, 0, 0,	
+		
+			-0.5, 0, 0, 0, 
+			0, 0, 0, 0, 
+			ecHgt,  0, 0, 0, 
+			a+0.5,0, 0, 0
+	DEL 2
+RETURN
+
+"NECendcap4":
+	ecHgt = nec_endcap_hgt4
+	ecDep = nec_endcap_dep4
+	ecWid = nec_endcap_wid4
+	ecThk = nec_endcap_thk4
+
+	ADDx 60/m2mm
+	ROTy -90
+		TUBE  8, 4, 1+2+4+8+16+32,
+			-ecThk, 0, 0,
+			-ecThk, ecDep+ecThk, 0,
+			ecWid+ecThk, ecDep+ecThk, 0,
+			ecWid+ecThk, 0, 0,
+
+			ecWid, 0, 0,
+			ecWid, ecDep, 0,
+			0, ecDep, 0,
+			0, 0, 0,	
+		
+			-0.5, 0, 0, 0, 
+			0, 0, 0, 0, 
+			ecHgt,  0, 0, 0, 
+			a+0.5,0, 0, 0
+	DEL 2
+RETURN

@@ -1,0 +1,230 @@
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!! This file is part of Floortech GDL Library
+!! created by John McSweeney
+!!
+!! This file contains: 
+!! :: CW260 Plan Object
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+UI_DIALOG "CW260 Truss Settings"
+UI_CURRENT_PAGE gs_ui_current_page
+
+!!!!!!!!!
+UI_PAGE 1 !! Endcaps
+	dim page_items[8][6]
+	! page item: 1) label 2) param 3) row mods (full:sub:right:left:flip) 4) cust wid 1 5) cust wid 2 6) tool tip text
+	p = 1
+	page_items[p][1] = "1 : Left endcap"
+		page_items[p][2] = ""
+		page_items[p][3] = "full:large_label:dark_label"
+		page_items[p][4] = "150"
+		page_items[p][5] = "0"
+		page_items[p][6] = "Choose the type of Endcap for End 1 of CW260"
+	p = 2
+	page_items[p][1] = ""			
+		page_items[p][2] = "nec_typeL"
+		page_items[p][3] = "full:large_input:dark_input:center"
+		page_items[p][4] = "0"
+		page_items[p][5] = "130"
+		page_items[p][6] = "Choose the type of Endcap for End 1 of CW260"
+	FOR i=1 TO 6 STEP 1
+		page_items[3][i] = "end_section"
+	NEXT i
+	FOR i=1 TO 6 STEP 1
+		page_items[4][i] = "end_column"
+	NEXT i
+	p = 5
+	page_items[p][1] = "2: Right endcap"
+		page_items[p][2] = ""
+		page_items[p][3] = "full:large_label:dark_label"
+		page_items[p][4] = "150"
+		page_items[p][5] = "0"
+		page_items[p][6] = "Choose the type of Endcap for End 2 of CW260"
+	p = 6
+	page_items[p][1] = ""			
+		page_items[p][2] = "nec_typeR"
+		page_items[p][3] = "full:large_input:dark_input:center"
+		page_items[p][4] = "0"
+		page_items[p][5] = "130"
+		page_items[p][6] = "Choose the type of Endcap for End 2 of CW260"
+	FOR i=1 TO 6 STEP 1
+		page_items[7][i] = "end_section"
+	NEXT i
+	FOR i=1 TO 6 STEP 1
+		page_items[8][i] = "end_column"
+	NEXT i
+
+	call "UITwoColumnPage_m" parameters all page_title = "End cap settings",
+												page_items = page_items
+
+!!!!!!!!!
+UI_PAGE 2
+	dim page_items[13][6]
+	! page item: 1) label 2) param 3) row mods (full:sub:right:left:flip) 4) cust wid 1 5) cust wid 2 6) tool tip text
+	p = 1
+	page_items[p][1] = "Show CW260 Truss Label?"
+		page_items[p][2] = "beam_label_show"
+		page_items[p][3] = "full:large_label:dark_label:center"
+		page_items[p][4] = "150"
+		page_items[p][5] = "20"
+		page_items[p][6] = ""
+	p = 2
+	page_items[p][1] = "Show length in label?"
+		page_items[p][2] = "beam_length_show"
+		page_items[p][3] = "full:large_label:right"
+		page_items[p][4] = "120"
+		page_items[p][5] = "20"
+		page_items[p][6] = ""
+	FOR i=1 TO 6 STEP 1
+		page_items[3][i] = "end_section"
+	NEXT i
+	p = 4
+	page_items[p][1] = "Label font:"
+		page_items[p][2] = "text_font"
+		page_items[p][3] = "full:large_label:center"
+		page_items[p][4] = "100"
+		page_items[p][5] = "60"
+		page_items[p][6] = ""
+	p = 5
+	page_items[p][1] = "Label font size:"
+		page_items[p][2] = "text_size"
+		page_items[p][3] = "full:large_label:center"
+		page_items[p][4] = "100"
+		page_items[p][5] = "60"
+		page_items[p][6] = ""
+	p = 6
+	page_items[p][1] = "Label pen:"
+		page_items[p][2] = "text_pen"
+		page_items[p][3] = "full:large_label:large_input:deeper_input:center"
+		page_items[p][4] = "100"
+		page_items[p][5] = "60"
+		page_items[p][6] = ""
+	FOR i=1 TO 6 STEP 1
+		page_items[7][i] = "end_section"
+	NEXT i
+	FOR i=1 TO 6 STEP 1
+		page_items[8][i] = "end_column"
+	NEXT i
+	p = 9
+	page_items[p][1] = "Plan object:"
+		page_items[p][2] = ""
+		page_items[p][3] = "full:large_label:dark_label"
+		page_items[p][4] = "100"
+		page_items[p][5] = "0"
+		page_items[p][6] = ""
+	p = 10
+	page_items[p][1] = "Outline pen:"
+		page_items[p][2] = "outline_pen"
+		page_items[p][3] = "full:large_label:large_input:deeper_input"
+		page_items[p][4] = "100"
+		page_items[p][5] = "80"
+		page_items[p][6] = ""
+	p = 11
+	page_items[p][1] = "Left NEC pen:"
+		page_items[p][2] = "leftend_pen"
+		page_items[p][3] = "full:large_label:large_input:deeper_input"
+		page_items[p][4] = "100"
+		page_items[p][5] = "80"
+		page_items[p][6] = ""
+	p = 12
+	page_items[p][1] = "Right NEC pen:"
+		page_items[p][2] = "rightend_pen"
+		page_items[p][3] = "full:large_label:large_input:deeper_input"
+		page_items[p][4] = "100"
+		page_items[p][5] = "80"
+		page_items[p][6] = ""
+	p = 13
+	page_items[p][1] = "Line style:"
+		page_items[p][2] = "outline_style"
+		page_items[p][3] = "full:large_label:large_input:deeper_input"
+		page_items[p][4] = "100"
+		page_items[p][5] = "80"
+		page_items[p][6] = ""
+
+	call "UITwoColumnPage_m" parameters all page_title = "2D Appearance settings",
+												page_items = page_items
+
+
+!!!!!!!!!
+UI_PAGE 3
+	dim page_items[6][6]
+	! page item: 1) label 2) param 3) row mods (full:sub:right:left:flip) 4) cust wid 1 5) cust wid 2 6) tool tip text
+	p = 1
+	page_items[p][1] = "Materials:"
+		page_items[p][2] = ""
+		page_items[p][3] = "full:large_label:dark_label:center"
+		page_items[p][4] = ""
+		page_items[p][5] = "0"
+		page_items[p][6] = ""
+	p = 2
+	page_items[p][1] = "Web and chord:"
+		page_items[p][2] = "truss_material"
+		page_items[p][3] = "full:large_label:deeper_input:center"
+		page_items[p][4] = ""
+		page_items[p][5] = "80"
+		page_items[p][6] = ""
+	p = 3
+	page_items[p][1] = "Left endcap:"
+		page_items[p][2] = "left_endcap_material"
+		page_items[p][3] = "full:large_label:deeper_input:center"
+		page_items[p][4] = ""
+		page_items[p][5] = "80"
+		page_items[p][6] = ""
+	p = 4
+	page_items[p][1] = "Right endcap:"
+		page_items[p][2] = "right_endcap_material"
+		page_items[p][3] = "full:large_label:deeper_input:center"
+		page_items[p][4] = ""
+		page_items[p][5] = "80"
+		page_items[p][6] = ""
+	FOR i=1 TO 6 STEP 1
+		page_items[5][i] = "end_section"
+	NEXT i
+	FOR i=1 TO 6 STEP 1
+		page_items[6][i] = "end_column"
+	NEXT i
+
+
+	call "UITwoColumnPage_m" parameters all page_title = "3D Appearance settings",
+												page_items = page_items
+
+!!!!!!!!!
+UI_PAGE 4
+	dim page_items[5][6]
+	! page item: 1) label 2) param 3) row mods (full:sub:right:left:flip) 4) cust wid 1 5) cust wid 2 6) tool tip text
+	p = 1
+	page_items[p][1] = "Truss penetration:"
+		page_items[p][2] = ""
+		page_items[p][3] = "full:large_label:dark_label"
+		page_items[p][4] = "180"
+		page_items[p][5] = "0"
+		page_items[p][6] = ""
+	p = 2
+	page_items[p][1] = "Enable truss penetration:"
+		page_items[p][2] = "has_truss_penetration"
+		page_items[p][3] = "full:large_label:center"
+		page_items[p][4] = "130"
+		page_items[p][5] = "30"
+		page_items[p][6] = ""
+	FOR i=1 TO 6 STEP 1
+		page_items[3][i] = "end_section"
+	NEXT i
+	p = 4
+	page_items[p][1] = "Truss specifications:"
+		page_items[p][2] = ""
+		page_items[p][3] = "full:large_label:dark_label"
+		page_items[p][4] = "130"
+		page_items[p][5] = "0"
+		page_items[p][6] = ""
+	p = 5
+	page_items[p][1] = "Web spacing (mm):"
+		page_items[p][2] = "web_spacing"
+		page_items[p][3] = "full:large_label:deeper_input:large_input:center"
+		page_items[p][4] = "120"
+		page_items[p][5] = "40"
+		page_items[p][6] = ""
+
+	call "UITwoColumnPage_m" parameters all page_title = "Truss Modifications",
+												page_items = page_items
+END

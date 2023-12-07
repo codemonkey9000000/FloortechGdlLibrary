@@ -1,0 +1,281 @@
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!! This file is part of Floortech GDL Library
+!! created by John McSweeney
+!!
+!! This file contains: 
+!! :: CW260 Plan Object
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+unid = 3456789
+
+! Text Styles
+DEFINE STYLE "above" Fnt_Sltn, text_size, 8,0
+DEFINE STYLE "below" Fnt_Sltn, text_size, 2,0
+DEFINE STYLE "middle" Fnt_Sltn, text_size, 2,0
+DEFINE STYLE "side1" Fnt_Sltn, 0.4, 4,0
+DEFINE STYLE "side2" Fnt_Sltn, 0.4, 6,0
+DEFINE STYLE "error" Fnt_Sltn, 0.3, 8,0
+DEFINE STYLE "penetration_text" Fnt_Sltn, 0.2, 5,0
+DEFINE STYLE "penetration_text1" Fnt_Sltn, 0.1, 4,0
+DEFINE STYLE "penetration_text2" Fnt_Sltn, 0.1, 5,0
+DEFINE STYLE "penetration_text3" Fnt_Sltn, 0.1, 6,0
+
+! Active display: If outside of drawing area, display all RED, else normal colors
+IF in_zone THEN
+	pen_t = text_pen
+	pen_r = rightend_pen
+	pen_l = leftend_pen
+	pen_0 = outline_pen
+ELSE
+	pen_t = 6
+	pen_r = 6
+	pen_l = 6
+	pen_0 = 6
+ENDIF
+
+!! Handle truss error : too long or draw truss
+!! Not required anymore - truss length is limited and cannot be drawn longer than max length.
+!		IF final_cut_length > truss_max_length_allowed/m2mm THEN
+!			GOSUB "DrawTrussError_old"
+!		ELSE
+!			GOSUB "Truss2D"
+!		ENDIF
+
+GOSUB "Truss2D"
+
+IF has_truss_penetration THEN
+	GOSUB "TrussPenetrationHotspot"
+	IF bad_penetration_location THEN
+		GOSUB "BadPenetration"
+	ELSE
+		GOSUB "LabelPenetration"
+	ENDIF
+ENDIF
+
+END
+
+! Sub Routines ===========================================================================================================================================================
+
+"Truss2D":
+	GOSUB "TrussOutline"
+	GOSUB "Selectables"
+	GOSUB "EndcapEnd1"
+	GOSUB "EndcapEnd2"
+
+	IF user_show_dims THEN
+		GOSUB "End1Label"
+		GOSUB "End2Label"
+	ENDIF
+
+	IF beam_length_show THEN 
+		text_str = GLOB_ID + " ("+STR("%1.0mm",final_cut_length)+")" 	
+	ELSE
+		text_str = GLOB_ID
+	ENDIF
+	IF beam_label_show THEN
+		GOSUB "TrussLabelAnchor"
+		GOSUB "TrussLabel"
+	ENDIF
+RETURN
+
+"TrussPenetrationHotspot":
+	ADD2 A/2, 0  !! Start penetration in center
+		! Move penetration location hotspot
+		unid = unid+1
+		HOTSPOT2 -0.001, b_wid/2, unid, peno_anchor, 1+128   	: unid=unid+1		!!base
+		HOTSPOT2 peno_anchor, b_wid/2, unid, peno_anchor, 2	   	: unid=unid+1		!!move
+		HOTSPOT2 -0.001, b_wid/2, unid, peno_anchor, 3			: unid=unid+1		!!ref
+		unid=unid+1		!!ref
+	DEL 1
+RETURN
+
+"TrussOutline":
+	PEN pen_0
+	SET LINE_TYPE outline_style
+	POLY2 4, 1+4,
+		0, 0,
+		A, 0,
+		A, b_wid,
+		0, b_wid
+RETURN
+
+"EndcapEnd1": 
+	IF NOT(nec_typeL = "Standard") THEN
+		pen pen_l
+		ADD2 0, b_wid
+		ROT2 180
+			GOSUB "Endcap"
+		DEL 2
+	ENDIF
+RETURN
+
+"EndcapEnd2": 
+	IF NOT(nec_typeR = "Standard") THEN
+		PEN pen_r
+		ADD2 A, 0
+			GOSUB "Endcap"
+		DEL 1
+	ENDIF
+RETURN
+
+"Selectables":
+	! Outline
+	HOTLINE2 0, 0, A, 0
+	HOTLINE2 0, b_wid, A, b_wid
+	HOTLINE2 0, 0, 0, b_wid
+	HOTLINE2 A, 0, A, b_wid
+
+	! Corners
+	HOTSPOT2 0,0,10,A,1
+	HOTSPOT2 0,b_wid,11,A,1
+	HOTSPOT2 A,b_wid,12,A,1
+	HOTSPOT2 A,0,13,A,1
+
+	! Midspan
+	HOTSPOT2 A/2,0,14
+	HOTSPOT2 A/2,b_wid,15
+	HOTSPOT2 A/4,0,16
+	HOTSPOT2 A/4,b_wid,17
+	HOTSPOT2 A/4*3,0,18
+	HOTSPOT2 A/4*3,b_wid,19
+RETURN
+
+"Endcap":
+	POLY2 6, 1+4,
+		nec_left_length, b_wid,
+		nec_left_length, 0,
+		0, 0,
+		nec_left_length, b_wid,
+		0, b_wid,
+		nec_left_length, 0
+RETURN
+
+"End1Label":
+	SET STYLE side1
+	PEN pen_r
+	TEXT2 0, b_wid/2 + 0.002, "L"
+
+	! Displays endcap type when not in zone
+	IF NOT(in_zone) THEN
+		SET STYLE above
+		POLY2 4, 15,
+			0 - STW(nec_typeL)/9, b_wid/2,
+			0 - STW(nec_typeL)/9, b_wid/2 + text_size/5,
+			STW(nec_typeL)/90, b_wid/2 + text_size/5,
+			STW(nec_typeL)/90, b_wid/2
+		TEXT2 0 - STW(nec_typeL)/20, b_wid/2, nec_typeL
+	ENDIF 
+RETURN
+
+"End2Label":
+	SET STYLE side2
+	PEN pen_l
+	TEXT2 A, b_wid/2 + 0.002, "R"
+
+	! Displays endcap type when not in zone
+	IF NOT(in_zone) THEN
+		SET STYLE above
+		POLY2 4, 15,
+			A + STW(nec_typeR)/9, b_wid/2,
+			A + STW(nec_typeR)/9, b_wid/2 + text_size/5,
+			A - STW(nec_typeR)/90, b_wid/2 + text_size/5,
+			A - STW(nec_typeR)/90, b_wid/2
+		TEXT2 A + STW(nec_typeL)/20, b_wid/2, nec_typeR
+	ENDIF 
+RETURN
+
+"TrussLabel":
+	SET STYLE middle  	! set style
+	PEN pen_t
+	rot_text = 0
+	IF symb_rotangle > 90 AND symb_rotangle < 270 THEN rot_text=180
+	ADD2 A/2, 0 		! reposition the test along the beam
+	ROT2 rot_text  		! rotate the text by variable rot_text
+		TEXT2 label_posx,label_posy,text_str   !print the label
+	DEL 2
+RETURN
+
+"TrussLabelAnchor":
+	ADD2 A/2, 0
+		unid = unid+1
+	    ! X-axis
+		HOTSPOT2 0.001,label_posy, unid,label_posx,1+128   	: unid=unid+1	!!base
+		HOTSPOT2 label_posx,label_posy, unid,label_posx,2	: unid=unid+1	!!move
+		HOTSPOT2 0,label_posy,unid,label_posx,3			   	: unid=unid+1	!!ref
+	 
+     	! Y-axis
+		HOTSPOT2 label_posx,0.001, unid,label_posy,1+128	: unid=unid+1   !!base
+		HOTSPOT2 label_posx,label_posy, unid,label_posy,2	: unid=unid+1   !!move
+		HOTSPOT2 label_posx,0, unid,label_posy,3			: unid=unid+1   !!ref
+	DEL 1
+RETURN
+
+"LabelPenetration":		
+	PEN penetration_pen
+	POLY2_B 8, 1+2+4, 3, 3,
+		peno_start, 0, 1,
+		peno_start, b_wid, 1,
+		peno_end, b_wid, 1,
+		peno_end, 0, 1,
+		peno_start, 0, 1,
+		peno_end, b_wid, 0,
+		peno_end, 0, 1,
+		peno_start, b_wid, 1
+	SET STYLE "penetration_text1"
+	IF peno_fixed THEN
+		peno_text1 = STR(first_web_cut, 8, 0)
+		peno_text2 = STR(first_web_cut+1, 8, 0)
+	ELSE
+		peno_text1 = STR(peno_start*m2mm, 8, 0) + "mm"
+		peno_text2 = STR(peno_end*m2mm, 8, 0) + "mm"
+	ENDIF
+	TEXT2 peno_start - 0.02, b_wid + b_wid/4, peno_text1
+	SET STYLE "penetration_text2"
+	TEXT2 (peno_start + peno_end) /2, b_wid + b_wid/4, "- Truss Penetration -"
+	SET STYLE "penetration_text3"
+	TEXT2 peno_end, b_wid + b_wid/4, peno_text2
+RETURN
+
+"BadPenetration":
+	IF user_show_dims THEN
+		SET STYLE "penetration_text"
+		PEN error_text_pen
+		TEXT2 A/2 + peno_anchor, b_wid * 2, "Penetration doesn't fit on truss"
+		ARC2 A/2 + peno_anchor, b_wid/2, 0.005, 0, 360
+		SET STYLE "penetration_text2"
+		TEXT2 A/2 + peno_anchor + 0.01, b_wid / 2, "Move"
+	ENDIF
+RETURN
+
+"DrawTrussError_old":
+	!! Handle an oversized truss object - currently not used as truss size has been limited
+	HOTSPOT2 0, 0
+	HOTSPOT2 0, b_wid
+	HOTSPOT2 A, b_wid
+	HOTSPOT2 A, 0
+		
+	! Draw truss outline in red
+	PEN error_text_pen
+	LINE2 0, 0, A, 0
+		HOTLINE2 0, 0, A, 0
+	LINE2 0, b_wid, A, b_wid
+		HOTLINE2 0, b_wid, A, b_wid
+	LINE2 0, 0, 0, b_wid
+		HOTLINE2 0, 0, 0, b_wid
+	LINE2 A, 0, A, b_wid
+		HOTLINE2 A, 0, A, b_wid
+
+	! Draw the Error string
+	SET STYLE error
+	ADD2 A/2, 0  
+		TEXT2 0,0,"Truss is longer than 6.6m - Truss is longer than 6.6m - Truss is longer than 6.6m - Truss is longer than 6.6m - Truss is longer than 6.6m - Truss is longer than 6.6m - Truss is longer than 6.6m"
+	DEL 1
+
+	rot_text=0  
+	IF symb_rotangle>90 AND symb_rotangle<270 THEN rot_text=180  !set variable at 180 degrees to flip text
+	ROT2 rot_text  !rotate the text by variable rot_text
+	SET STYLE middle 
+	PEN pen_t
+	text_str="TRUSS IS TOO LONG "+" ("+STR("%1.0mm",final_cut_length)+")"
+	TEXT2 A/2, b_wid*(-1), text_str 
+RETURN

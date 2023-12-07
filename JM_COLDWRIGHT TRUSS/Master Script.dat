@@ -1,0 +1,257 @@
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!! This file is part of Floortech GDL Library
+!! created by John McSweeney
+!!
+!! This file contains: 
+!! :: CW260 Plan Object
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+! Checks object is in the drawing area and decativates (schedule should ignore deactivated objects)
+call "ObjectInDrawingZoneChecker" parameters object_position_x = SYMB_POS_X, object_position_y = SYMB_POS_Y,
+									returned_parameters in_zone
+
+! conversion variable to avoid decimal meters in code
+m2mm = 1000
+
+! Local vars for 3D
+chord_hgt = 20/m2mm
+chord_thk = 2/m2mm
+
+! Common web specifications on all types (? correct)
+web_wid = 22/m2mm
+web_thk = 15/m2mm
+web_spacing = 172/m2mm
+
+! Calculate webs
+web_height = b_dep - chord_thk*2
+web_ang = ATN(web_height/(web_spacing - web_thk))
+web_count = INT(final_cut_length/web_spacing)
+
+! Handle Default Settings
+IF GLOB_MODPAR_NAME = "truss_type" THEN
+	IF truss_type = "CW260" THEN
+		peno_fixed = 1
+		outline_pen = 2
+	ENDIF
+	IF truss_type = "HJ300" THEN
+		peno_fixed = 0
+		outline_pen = 9
+	ENDIF
+	IF truss_type = "CW346" THEN
+		peno_fixed = 1
+		outline_pen = 2
+	ENDIF
+ENDIF
+IF GLOB_MODPAR_NAME = "has_truss_penetration" THEN
+	IF truss_type = "CW260" THEN
+		peno_fixed = 1
+	ENDIF
+	IF truss_type = "HJ300" THEN
+		peno_fixed = 0
+	ENDIF
+	IF truss_type = "CW346" THEN
+		peno_fixed = 1
+	ENDIF
+ENDIF
+
+! Set bracket specifications and other type-specific variables
+IF truss_type = "CW260" THEN
+	truss_penetration_width = web_spacing * 2
+	truss_max_length_allowed = 6600
+
+	! NEC Bracket Heights
+	nec_typeA = 70/m2mm
+	nec_typeB = 65/m2mm
+	nec_typeC = 17/m2mm
+	nec_typeD = 10/m2mm
+	nec_typeE = 15/m2mm
+	nec_typeF = 17/m2mm
+	nec_typeP = 25/m2mm
+	nec_special = 20/m2mm
+
+	! Endcap Dimensions
+	std_endcap_hgt = 250/m2mm
+	std_endcap_dep = 100/m2mm
+	std_endcap_wid = 50/m2mm
+	std_endcap_thk = 1.6/m2mm
+
+	nec_endcap_hgt = 150/m2mm
+	nec_endcap_dep = 100/m2mm
+	nec_endcap_wid = 53/m2mm
+	nec_endcap_thk = 1.6/m2mm
+
+	nec_endcap_hgt1 = 150/m2mm
+	nec_endcap_dep1 = 100/m2mm
+	nec_endcap_wid1 = 53/m2mm
+	nec_endcap_thk1 = 1.6/m2mm
+
+	nec_endcap_hgt2 = 214/m2mm
+	nec_endcap_dep2 = 100/m2mm
+	nec_endcap_wid2 = 53/m2mm
+	nec_endcap_thk2 = 1.6/m2mm
+
+	nec_endcap_hgt3 = 150/m2mm
+	nec_endcap_dep3 = 100/m2mm
+	nec_endcap_wid3 = 53/m2mm
+	nec_endcap_thk3 = 1.6/m2mm
+
+	nec_endcap_hgt4 = 150/m2mm
+	nec_endcap_dep4 = 100/m2mm
+	nec_endcap_wid4 = 53/m2mm
+	nec_endcap_thk4 = 1.6/m2mm
+ENDIF
+
+IF truss_type = "HJ300" THEN
+	truss_penetration_width = web_spacing * 2
+	truss_max_length_allowed = 6600
+
+	! NEC Bracket Heights
+	nec_typeC = 103/m2mm
+	nec_typeD = 10/m2mm
+	nec_typeE = 101/m2mm
+	nec_typeF = 56/m2mm
+	nec_typeG = 52/m2mm
+	nec_typeH = 46/m2mm
+	nec_typeI = 16/m2mm
+	nec_typeJ = 19/m2mm
+	nec_typeK = 22/m2mm
+	nec_special = 106/m2mm
+
+	! Endcap Dimensions
+	std_endcap_hgt = 290/m2mm
+	std_endcap_dep = 100/m2mm
+	std_endcap_wid = 50/m2mm
+	std_endcap_thk = 1.6/m2mm
+
+	nec_endcap_hgt = 290/m2mm
+	nec_endcap_dep = 100/m2mm
+	nec_endcap_wid = 53/m2mm
+	nec_endcap_thk = 1.6/m2mm
+
+	nec_endcap_hgt1 = 189/m2mm
+	nec_endcap_dep1 = 100/m2mm
+	nec_endcap_wid1 = 53/m2mm
+	nec_endcap_thk1 = 1.6/m2mm
+
+	nec_endcap_hgt2 = 244/m2mm
+	nec_endcap_dep2 = 100/m2mm
+	nec_endcap_wid2 = 53/m2mm
+	nec_endcap_thk2 = 1.6/m2mm
+
+	nec_endcap_hgt3 = 275/m2mm
+	nec_endcap_dep3 = 100/m2mm
+	nec_endcap_wid3 = 53/m2mm
+	nec_endcap_thk3 = 1.6/m2mm
+
+	nec_endcap_hgt4 = 290/m2mm
+	nec_endcap_dep4 = 100/m2mm
+	nec_endcap_wid4 = 53/m2mm
+	nec_endcap_thk4 = 1.6/m2mm
+ENDIF
+
+IF truss_type = "CW346" THEN
+	truss_max_length_allowed = 5200
+	truss_penetration_width = web_spacing * 2
+
+	! NEC Bracket Heights
+	nec_typeC = 103/m2mm
+	nec_typeD = 10/m2mm
+	nec_typeE = 101/m2mm
+	nec_typeF = 56/m2mm
+	nec_typeG = 52/m2mm
+	nec_typeH = 46/m2mm
+	nec_typeI = 16/m2mm
+	nec_typeJ = 19/m2mm
+	nec_typeK = 22/m2mm
+	nec_typeM = 16/m2mm
+	nec_typeP = 62/m2mm
+	nec_special = 106/m2mm
+
+	! Endcap Dimensions
+	std_endcap_hgt = 336/m2mm
+	std_endcap_dep = 100/m2mm
+	std_endcap_wid = 50/m2mm
+	std_endcap_thk = 1.6/m2mm
+
+	nec_endcap_hgt = 310/m2mm
+	nec_endcap_dep = 100/m2mm
+	nec_endcap_wid = 53/m2mm
+	nec_endcap_thk = 1.6/m2mm
+
+	nec_endcap_hgt1 = 210/m2mm
+	nec_endcap_dep1 = 100/m2mm
+	nec_endcap_wid1 = 53/m2mm
+	nec_endcap_thk1 = 1.6/m2mm
+
+	nec_endcap_hgt2 = 260/m2mm
+	nec_endcap_dep2 = 100/m2mm
+	nec_endcap_wid2 = 53/m2mm
+	nec_endcap_thk2 = 1.6/m2mm
+
+	nec_endcap_hgt3 = 310/m2mm
+	nec_endcap_dep3 = 100/m2mm
+	nec_endcap_wid3 = 53/m2mm
+	nec_endcap_thk3 = 1.6/m2mm
+
+	nec_endcap_hgt4 = 250/m2mm
+	nec_endcap_dep4 = 100/m2mm
+	nec_endcap_wid4 = 53/m2mm
+	nec_endcap_thk4 = 1.6/m2mm
+ENDIF
+
+
+! Count endcaps
+endcap_count_nec = 0
+endcap_count_std = 0
+IF nec_typeL = "Standard" OR nec_typeL = "Adjustable" THEN
+	endcap_count_std = endcap_count_std + 1
+ELSE
+	endcap_count_nec = endcap_count_nec + 1
+ENDIF
+IF nec_typeR = "Standard" OR nec_typeR = "Adjustable" THEN
+	endcap_count_std = endcap_count_std + 1
+ELSE
+	endcap_count_nec = endcap_count_nec + 1
+ENDIF
+
+
+! Adjust length of truss based on number of endcaps
+IF endcap_count_nec > 0 THEN
+	final_cut_length = a - (length_adj_per_endcap * endcap_count_nec)
+ELSE
+	final_cut_length = a
+ENDIF
+
+
+! Deprecated request to 'window-door-show-dim', but template currently relies on this
+! Check window_door_show_dim to determine layout (beam or structural) : Populated to user_show_dims variable
+void = REQUEST ('window_door_show_dim', ' ', user_show_dims)
+
+
+! Calculate Air-con peno cuts
+bad_penetration_location = 0
+peno_start = 0
+peno_end = 0
+first_web_cut = 0
+IF has_truss_penetration THEN
+	peno_start = A/2 + peno_anchor
+
+	! Lock peno to webs if required
+	IF peno_fixed THEN
+		peno_start = INT(peno_start / web_spacing) * (web_spacing)
+	ENDIF
+
+	peno_end = peno_start + truss_penetration_width
+	first_web_cut = INT((A/2+peno_anchor)/web_spacing) + 1
+ENDIF
+
+IF peno_start > web_spacing AND peno_end < A - web_spacing*2 THEN
+	bad_penetration_location = 0
+ELSE
+	bad_penetration_location = 1
+ENDIF
+
+
+
+

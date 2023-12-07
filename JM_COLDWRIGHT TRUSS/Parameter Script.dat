@@ -1,0 +1,97 @@
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!! This file is part of Floortech GDL Library
+!! created by John McSweeney
+!!
+!! This file contains: 
+!! :: CW260 Plan Object
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+PARAMETERS active_status = in_zone
+LOCK "active_status"
+
+IF NOT(beam_label_show) THEN LOCK "beam_length_show"
+
+VALUES "text_font" "Arial", "Arial Narrow"
+VALUES "truss_type" "CW260","HJ300","CW346"
+VALUES "truss_group" "PACK 1","PACK 2","PACK 3","PACK 4"
+
+! Update any values that may have been changed in the scripts
+PARAMETERS truss_type = truss_type,
+			truss_max_length_allowed = truss_max_length_allowed,
+			final_cut_length = final_cut_length,
+			b_len_display = final_cut_length,
+			endcap_count_nec = endcap_count_nec, 
+			endcap_count_std = endcap_count_std,
+			outline_pen = outline_pen
+
+IF truss_type = "CW260" THEN
+	PARAMETERS b_dep = 260/m2mm,
+				b_wid = 50/m2mm
+	VALUES "nec_typeR" "Type A","Type B","Type C","Type D","Type E","Type F","Type P","Special","Adjustable","Standard"
+	VALUES "nec_typeL" "Type A","Type B","Type C","Type D","Type E","Type F","Type P","Special","Adjustable","Standard"
+ENDIF
+IF truss_type = "HJ300" THEN
+	PARAMETERS b_dep = 300/m2mm,
+				b_wid = 50/m2mm
+	VALUES "nec_typeR" "Type C","Type D","Type E","Type F","Type G","Type H","Type I","Type J","Type K","Special","Adjustable","Standard"
+	VALUES "nec_typeL" "Type C","Type D","Type E","Type F","Type G","Type H","Type I","Type J","Type K","Special","Adjustable","Standard"
+ENDIF
+IF truss_type = "CW346" THEN
+	PARAMETERS b_dep = 346/m2mm,
+				b_wid = 50/m2mm
+	VALUES "nec_typeR" "Type C","Type D","Type E","Type F","Type G","Type H","Type I","Type J","Type K","Type L","Type P","Special","Adjustable","Standard"
+	VALUES "nec_typeL" "Type C","Type D","Type E","Type F","Type G","Type H","Type I","Type J","Type K","Type L","Type P","Special","Adjustable","Standard"
+ENDIF
+
+! Set A, B, and ZZYZX
+IF A > truss_max_length_allowed/m2mm THEN ! Restrict truss length
+	PARAMETERS A = truss_max_length_allowed/m2mm
+ENDIF
+PARAMETERS B = b_wid,
+			ZZYZX = b_dep
+
+IF has_truss_penetration THEN
+	PARAMETERS peno_start = peno_start,
+				peno_end = peno_end,
+				peno_webs_cut = STR(first_web_cut, 1, 0) + "+" + STR(first_web_cut+1, 1, 0),
+				peno_fixed = peno_fixed
+ELSE
+	PARAMETERS peno_start = 0,
+				peno_end = 0,
+				peno_webs_cut = "",
+				peno_fixed = 0
+	LOCK "peno_fixed"
+ENDIF
+
+LOCK "B", "ZZYZX", "b_wid", "b_dep"
+LOCK "truss_max_length_allowed", 
+	"truss_penetration_width", 
+	"peno_anchor", 
+	!"peno_start", ! can't lock lengths that are used in the schedule else they display as meters instead of mm
+	!"peno_end", 
+	"peno_webs_cut", 
+	"endcap_count_nec", 
+	"endcap_count_std", 
+	"final_cut_length"
+
+! User does not control values (Except A while drawing)
+HIDEPARAMETER "A", "B", "ZZYZX"
+
+!! UI Page Navigation
+dim ui_menu_items[4]
+	ui_menu_items[1] = "Endcaps"
+	ui_menu_items[2] = "2D"
+	ui_menu_items[3] = "3D"
+	ui_menu_items[4] = "Modify"
+PARAMETERS ui_menu_items = ui_menu_items
+
+!! Page nav
+!! UI Page buttons own 1 - 99
+
+! web spacing parameter used in UI - UI no longer used, keep for now
+LOCK "web_spacing" 
+
+IF GLOB_UI_BUTTON_ID > 0 AND GLOB_UI_BUTTON_ID <= VARDIM1(ui_menu_items) THEN PARAMETERS gs_ui_current_page = GLOB_UI_BUTTON_ID
+
+
